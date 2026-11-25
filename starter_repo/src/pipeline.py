@@ -17,13 +17,35 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parents[1].parent / "data"
 
 
+def _find_header_row(path, sheet_name):
+    """Return the 0-based row index of the real header (the row whose first cell is 'date').
+
+    The 2025 workbook has a note row (+ a blank row) above the header, so a plain
+    read_excel() would treat the note as the header and every column would be 'Unnamed'.
+    """
+    raw = pd.read_excel(path, sheet_name=sheet_name, header=None, nrows=15)
+    for i, v in enumerate(raw.iloc[:, 0]):
+        if str(v).strip().lower() == "date":
+            return i
+    raise ValueError(f"Could not find a 'date' header row in {path}")
+
+
 def load_sales():
-    """Load and concatenate all three sales files into one DataFrame."""
+    """Load and concatenate all three sales files into one DataFrame.
+
+    Columns are matched BY NAME (files have different column orders) and a
+    `source_file` column is added so data-quality issues can be traced back.
+    """
     a = pd.read_csv(DATA / "sales_2021_2022.csv")
-    # BUG 1: the 2023-2024 file is semicolon-separated with a different column
-    # order, but it is read with default comma settings here.
-    b = pd.read_csv(DATA / "sales_2023_2024.csv")
-    c = pd.read_excel(DATA / "sales_2025.xlsx", sheet_name="daily_sales")
+    # FIX 1: 2023-2024 file is semicolon-separated (column order differs; concat aligns by name).
+    b = pd.read_csv(DATA / "sales_2023_2024.csv", sep=";")
+    # FIX 1b (untested bug): 2025 workbook has a note row above the header.
+    xlsx = DATA / "sales_2025.xlsx"
+    hdr = _find_header_row(xlsx, "daily_sales")
+    c = pd.read_excel(xlsx, sheet_name="daily_sales", header=hdr)
+    for frame, name in ((a, "sales_2021_2022.csv"), (b, "sales_2023_2024.csv"), (c, "sales_2025.xlsx")):
+        frame.columns = [str(col).strip().lower() for col in frame.columns]
+        frame["source_file"] = name
     return pd.concat([a, b, c], ignore_index=True)
 
 
