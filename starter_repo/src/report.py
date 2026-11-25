@@ -105,11 +105,11 @@ def main(argv=None):
     ev_summary.to_csv(out / "data_quality_summary.csv", index=False)
     xlsx = out / f"lankafresh_report_{month}.xlsx"
     with pd.ExcelWriter(xlsx) as xw:
-        month_view.to_excel(xw, f"Summary {month}", index=False)
-        result.to_excel(xw, "All months", index=False)
-        anomalies.to_excel(xw, "Anomalies", index=False)
-        ev_summary.to_excel(xw, "DQ summary", index=False)
-        events.to_excel(xw, "DQ row log", index=False)
+        month_view.to_excel(xw, sheet_name=f"Summary {month}", index=False)
+        result.to_excel(xw, sheet_name="All months", index=False)
+        anomalies.to_excel(xw, sheet_name="Anomalies", index=False)
+        ev_summary.to_excel(xw, sheet_name="DQ summary", index=False)
+        events.to_excel(xw, sheet_name="DQ row log", index=False)
 
     print(f"Report month: {month}")
     print(month_view[["location", "revenue", "monthly_revenue_target_LKR", "pct_of_target", "status"]]
