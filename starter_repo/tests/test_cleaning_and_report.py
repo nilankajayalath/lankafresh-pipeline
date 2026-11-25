@@ -44,3 +44,11 @@ def test_report_writes_files(tmp_path):
         assert (tmp_path / f).exists(), f
     monthly = pd.read_csv(tmp_path / "monthly_revenue_vs_target.csv")
     assert monthly["location"].nunique() == 6 and len(monthly) == 360
+
+
+def test_explanations_are_grounded(tmp_path):
+    from src import explain
+    assert explain.main(["--out-dir", str(tmp_path)]) == 0
+    df = pd.read_csv(tmp_path / "anomaly_explanations.csv")
+    assert len(df) > 0 and df["explanation"].str.len().min() > 20
+    assert set(df["source"]) == {"rules"}  # no API key in CI -> offline fallback
